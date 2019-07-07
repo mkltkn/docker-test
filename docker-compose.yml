@@ -1,0 +1,77 @@
+version: '3.3'
+services:
+    database:
+      container_name: wDatabase
+      image: mysql:5.7.26
+      volumes:
+          - ./db/w.sql:/docker-entrypoint-initdb.d/w.sql
+      environment:
+          - MYSQL_ROOT_PASSWORD=w
+          - MYSQL_DATABASE=w
+          - MYSQL_USER=w
+          - MYSQL_PASSWORD=w
+          - TZ=Europe/Warsaw
+      ports:
+          - "3310:3306"
+        
+    backend:
+      build:
+          context: wBackend
+          dockerfile: dev.Dockerfile
+      container_name: wBackend
+      volumes:
+      - ./wBackend:/home/wBackend
+      ports:
+        - "8000:8000"
+      privileged: true
+      links:
+        - database
+      depends_on:
+        - database
+
+    frontend:
+      container_name: wFrontend
+
+      image: antoine/nuxt 
+      ports:
+        - 1515:3000
+      volumes:
+        - ./wFrontend:/home/wFrontend
+      privileged: true
+      links:
+        - backend
+      depends_on:
+        - backend
+
+    web:
+      container_name: wWeb
+      image: nginx
+      environment:
+            - TZ=Europe/Warsaw
+            - PROTOCOL=HTTP
+      volumes:
+          - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      links:
+          - frontend
+      depends_on:
+          - frontend
+      ports:
+          - "80:80"
+
+    spider:
+      container_name: wSpider
+      image: node:12
+      volumes:
+        - ./wspider:/home/wSpider      
+      command: npm install
+      privileged: true
+      depends_on:
+        - database
+volumes:
+    database:
+    backend:
+    frontend:
+    spider:
+    nginx:
+
+
